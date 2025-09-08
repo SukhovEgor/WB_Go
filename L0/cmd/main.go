@@ -26,7 +26,7 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/api/add", newApp.Insert)
-	r.HandleFunc("/api/get", newApp.Select)
+	//r.HandleFunc("/api/get", newApp.Select)
 	log.Println("Server started at :3000")
 	http.ListenAndServe(":3000", r)
 
