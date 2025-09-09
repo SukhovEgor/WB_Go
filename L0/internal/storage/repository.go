@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 
+	"test-task/internal/models"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,7 +28,7 @@ func (repository *Repository) InitRepository(connStr string) error {
 	return nil
 }
 
-func (repository *Repository) InsertToDB(order *Order) {
+func (repository *Repository) InsertToDB(order *models.Order) {
 	conn, err := repository.pool.Acquire(context.Background())
 	if err != nil {
 		log.Printf("Unable to get connection from the Pool: %v", err)
