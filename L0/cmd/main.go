@@ -25,8 +25,13 @@ func main() {
 	
 	r := mux.NewRouter()
 
-	r.HandleFunc("/api/add", newApp.Insert)
+	r.HandleFunc("/", newApp.HomeHandler)
+	//r.HandleFunc("/api/add", newApp.Insert)
+	r.HandleFunc("/order/{order_uid}", newApp.GetOrderById).Methods("GET")
+	//r.HandleFunc("/order/random/{count}", new.GetRandomOrders).Methods("GET")
+
 	//r.HandleFunc("/api/get", newApp.Select)
+	
 	log.Println("Server started at :3000")
 	http.ListenAndServe(":3000", r)
 

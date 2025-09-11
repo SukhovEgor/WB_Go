@@ -1,11 +1,14 @@
 package app
 
 import (
+	"fmt"
 	"log"
-	"net/http"
-	"time"
+	"net/http"	
+	"encoding/json"
 
-	storage "test-task/internal/storage"
+	"test-task/internal/storage"
+
+	"github.com/gorilla/mux"
 )
 
 type App struct {
@@ -22,9 +25,31 @@ func NewApp(connStr string) (*App, error) {
 	return app, nil
 }
 
-func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
+func (a *App) HomeHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Welcome to the home page!")
+}
+
+func  (a *App)  GetOrderById(w http.ResponseWriter, r *http.Request) {
+	order_uid := mux.Vars(r)["order_uid"]
+
+	order, exist, err := a.repository.FindOrderById(order_uid)
+	if !exist {
+		fmt.Fprintf(w, "Order %v does not exist\n", order_uid)
+		return
+	} else if err != nil {
+		log.Printf("Finding order by id is failed: %v", err)
+		return
+	}
+	json_data, err := json.MarshalIndent(order, "", "\t")
+	if err != nil {
+		log.Printf("Failed to create json: %v", err)
+	}
+	fmt.Fprintf(w, "%s\n", json_data)
+}
+
+/* func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 	log.Println("Insert")
-	order := storage.Order{
+	order := models.Order{
 		OrderUID:          "test_order2",
 		TrackNumber:       "test_trackNum",
 		Entry:             "test_entry",
@@ -36,7 +61,7 @@ func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 		SmID:              1,
 		DateCreated:       time.Now(),
 		OofShard:          "1",
-		Delivery: storage.Delivery{
+		Delivery: models.Delivery{
 			OrderUID: "test_order2",
 			Name:     "test_name",
 			Phone:    "123456",
@@ -46,7 +71,7 @@ func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 			Region:   "test_region",
 			Email:    "test_email",
 		},
-		Payment: storage.Payment{
+		Payment: models.Payment{
 			OrderUID:     "test_order2",
 			Transaction:  "test_tx",
 			RequestID:    "test_req",
@@ -59,7 +84,7 @@ func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 			GoodsTotal:   300,
 			CustomFee:    10,
 		},
-		Items: []storage.Item{
+		Items: []models.Item{
 			{
 				ID:          1,
 				OrderUID:    "test_order2",
@@ -79,7 +104,7 @@ func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.repository.InsertToDB(&order)
-}
+} */
 
 /* func (a *App) Select(w http.ResponseWriter, r *http.Request) {
 	// Query all authors
