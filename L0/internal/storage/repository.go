@@ -2,8 +2,8 @@ package storage
 
 import (
 	"context"
-	"log"
 	"fmt"
+	"log"
 
 	"test-task/internal/cache"
 	"test-task/internal/models"
@@ -20,11 +20,14 @@ type Repository struct {
 const cacheCapacity = 100
 
 func (repository *Repository) InitRepository(connStr string) error {
+
 	config, err := pgxpool.ParseConfig(connStr)
 	if err != nil {
 		log.Printf("Unable to parse config: %v", err)
 		return err
 	}
+
+	log.Printf("InitRepository")
 
 	repository.pool, err = pgxpool.NewWithConfig(context.Background(), config)
 	if err != nil {
@@ -32,7 +35,7 @@ func (repository *Repository) InitRepository(connStr string) error {
 		return err
 	}
 
-/* 	repository.cache = *cache.CreateCache(cacheCapacity)
+	repository.cache = *cache.CreateCache(cacheCapacity)
 
 	orders, err := repository.GetOrders(cacheCapacity)
 	if err != nil {
@@ -41,7 +44,7 @@ func (repository *Repository) InitRepository(connStr string) error {
 	}
 	for i := 0; i < len(orders); i++ {
 		repository.cache.Add(&orders[i])
-	} */
+	}
 
 	return nil
 
@@ -90,7 +93,6 @@ func (repository *Repository) GetOrders(quantity int) ([]models.Order, error) {
 
 	return orders, nil
 }
-
 
 func (repository *Repository) InsertToDB(order *models.Order) {
 	conn, err := repository.pool.Acquire(context.Background())
@@ -156,12 +158,12 @@ func (repository *Repository) InsertToDB(order *models.Order) {
 }
 
 func (repository *Repository) FindOrderById(order_uid string) (order models.Order, exist bool, err error) {
-/* 	cacheOrder, exist := repository.cache.Get(order_uid)
+	cacheOrder, exist := repository.cache.Get(order_uid)
 	if exist {
 		log.Printf("Have found in the cache")
 		return *cacheOrder, true, nil
 	}
-	log.Printf("Have found in the DB") */
+	log.Printf("Have found in the DB")
 	return repository.selectFromDB(order_uid)
 }
 

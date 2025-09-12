@@ -47,6 +47,10 @@ func  (a *App)  GetOrderById(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", json_data)
 }
 
+func (a *App) CreateOrders(w http.ResponseWriter, r *http.Request) {
+	
+}
+
 /* func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
 	log.Println("Insert")
 	order := models.Order{

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"container/list"
+	"log"
 
 	models "test-task/internal/models"
 )
@@ -30,6 +31,7 @@ func (cache *Cache) Add(order *models.Order) {
 
 	element := cache.cacheList.PushFront(order)
 	cache.cacheMap[order.OrderUID] = element
+	log.Printf("Add order into cache: %v", order.OrderUID)
 
 	if len(cache.cacheMap) > cache.capacity {
 		cache.removeOldest()
@@ -38,7 +40,7 @@ func (cache *Cache) Add(order *models.Order) {
 
 func (cache *Cache) Get(order_uid string) (order *models.Order, exist bool) {
 
-	if element, exist := cache.cacheMap[order.OrderUID]; exist {
+	if element, exist := cache.cacheMap[order_uid]; exist {
 		cache.cacheList.MoveToFront(element)
 		return element.Value.(*models.Order), true
 	}
@@ -54,15 +56,3 @@ func (cache *Cache) removeOldest() {
 	}
 }
 
-/* func FillLatestData(cache *Cache) {
-
-	latestOrders, err := models.GetOrders(cache.Capacity)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	for _, order := range latestOrders {
-		cache.Add(order.Order_uid, order)
-	}
-} */

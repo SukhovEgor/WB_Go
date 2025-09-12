@@ -28,9 +28,7 @@ func main() {
 	r.HandleFunc("/", newApp.HomeHandler)
 	//r.HandleFunc("/api/add", newApp.Insert)
 	r.HandleFunc("/order/{order_uid}", newApp.GetOrderById).Methods("GET")
-	//r.HandleFunc("/order/random/{count}", new.GetRandomOrders).Methods("GET")
-
-	//r.HandleFunc("/api/get", newApp.Select)
+	r.HandleFunc("/order/add}", newApp.CreateOrders).Methods("POST")
 	
 	log.Println("Server started at :3000")
 	http.ListenAndServe(":3000", r)
