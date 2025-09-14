@@ -6,6 +6,7 @@ toolchain go1.24.6
 
 require (
 	github.com/IBM/sarama v1.46.0 // indirect
+	github.com/brianvoe/gofakeit/v7 v7.6.0 // indirect
 	github.com/confluentinc/confluent-kafka-go/v2 v2.11.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect

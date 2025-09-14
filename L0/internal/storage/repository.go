@@ -94,16 +94,18 @@ func (repository *Repository) GetOrders(quantity int) ([]models.Order, error) {
 	return orders, nil
 }
 
-func (repository *Repository) InsertToDB(order *models.Order) {
+func (repository *Repository) InsertToDB(order *models.Order) error {
 	conn, err := repository.pool.Acquire(context.Background())
 	if err != nil {
 		log.Printf("Unable to get connection from the Pool: %v", err)
+		return err
 	}
 	defer conn.Release()
 
 	tx, err := conn.Begin(context.Background())
 	if err != nil {
 		log.Printf("Error starting transaction: %v", err)
+		return err
 	}
 	defer tx.Rollback(context.Background())
 
@@ -114,6 +116,7 @@ func (repository *Repository) InsertToDB(order *models.Order) {
 		order.DateCreated, order.OofShard)
 	if err != nil {
 		log.Printf("Error inserting order: %v", err)
+		return err
 	}
 
 	delivery := &order.Delivery
@@ -123,6 +126,7 @@ func (repository *Repository) InsertToDB(order *models.Order) {
 		delivery.Region, delivery.Email)
 	if err != nil {
 		log.Printf("Error inserting delivery: %v", err)
+		return err
 	}
 
 	payment := &order.Payment
@@ -133,6 +137,7 @@ func (repository *Repository) InsertToDB(order *models.Order) {
 		payment.GoodsTotal, payment.CustomFee)
 	if err != nil {
 		log.Printf("Error inserting payment: %v", err)
+		return err
 	}
 
 	for i := 0; i < len(order.Items); i++ {
@@ -145,20 +150,23 @@ func (repository *Repository) InsertToDB(order *models.Order) {
 		)
 		if err != nil {
 			log.Printf("Error inserting items: %v", err)
+			return err
 		}
 	}
 
 	err = tx.Commit(context.Background())
 	if err != nil {
 		log.Fatalf("Error committing transaction: %v", err)
+		return err
 	}
 
 	log.Println("Insert is completed")
+	return nil
 
 }
 
 func (repository *Repository) FindOrderById(order_uid string) (order models.Order, exist bool, err error) {
-	cacheOrder, exist := repository.cache.Get(order_uid)
+	cacheOrder, exist, err := repository.cache.Get(order_uid)
 	if exist {
 		log.Printf("Have found in the cache")
 		return *cacheOrder, true, nil

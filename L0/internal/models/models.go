@@ -5,59 +5,59 @@ import (
 )
 
 type Order struct {
-	OrderUID          string    `json:"order_uid" db:"order_uid"`
-	TrackNumber       string    `json:"track_number" db:"track_number"`
-	Entry             string    `json:"entry" db:"entry"`
-	Delivery          Delivery  `json:"delivery" db:"-"`
-	Payment           Payment   `json:"payment" db:"-"`
-	Items             []Item    `json:"items" db:"-"`
-	Locale            string    `json:"locale" db:"locale"`
-	InternalSignature string    `json:"internal_signature" db:"internal_signature"`
-	CustomerID        string    `json:"customer_id" db:"customer_id"`
-	DeliveryService   string    `json:"delivery_service" db:"delivery_service"`
-	Shardkey          string    `json:"shardkey" db:"shardkey"`
-	SmID              int       `json:"sm_id" db:"sm_id"`
-	DateCreated       time.Time `json:"date_created" db:"date_created"`
-	OofShard          string    `json:"oof_shard" db:"oof_shard"`
+	OrderUID          string    `json:"order_uid" fake:"{uuid}"`
+	TrackNumber       string    `json:"track_number"`
+	Entry             string    `json:"entry"`
+	Delivery          Delivery  `json:"delivery" fake:"skip"`
+	Payment           Payment   `json:"payment" fake:"skip"`
+	Items             []Item    `json:"items" fake:"skip"`
+	Locale            string    `json:"locale" fake:"{languageabbreviation}"`
+	InternalSignature string    `json:"internal_signature" fake:"skip"`
+	CustomerID        string    `json:"customer_id" fake:"{uuid}""`
+	DeliveryService   string    `json:"delivery_service" fake:"{company}"`
+	Shardkey          string    `json:"shardkey"`
+	SmID              int       `json:"sm_id" fake:"{number:1,100}"`
+	DateCreated       time.Time `json:"date_created"`
+	OofShard          string    `json:"oof_shard"`
 }
 
 type Delivery struct {
-	OrderUID string `json:"-" db:"order_uid"`
-	Name     string `json:"name" db:"name"`
-	Phone    string `json:"phone" db:"phone"`
-	Zip      string `json:"zip" db:"zip"`
-	City     string `json:"city" db:"city"`
-	Address  string `json:"address" db:"address"`
-	Region   string `json:"region" db:"region"`
-	Email    string `json:"email" db:"email"`
+	OrderUID string `json:"-"`
+	Name     string `json:"name" fake:"{name}"`
+	Phone    string `json:"phone" fake:"{phone}"`
+	Zip      string `json:"zip"`
+	City     string `json:"city" fake:"{city}"`
+	Address  string `json:"address" fake:"{address}"`
+	Region   string `json:"region" fake:"{state}"`
+	Email    string `json:"email" fake:"{email}"`
 }
 
 type Payment struct {
-	OrderUID     string `json:"-" db:"order_uid"`
-	Transaction  string `json:"transaction" db:"transaction"`
-	RequestID    string `json:"request_id" db:"request_id"`
-	Currency     string `json:"currency" db:"currency"`
-	Provider     string `json:"provider" db:"provider"`
-	Amount       int    `json:"amount" db:"amount"`
-	PaymentDt    int64  `json:"payment_dt" db:"payment_dt"`
-	Bank         string `json:"bank" db:"bank"`
-	DeliveryCost int    `json:"delivery_cost" db:"delivery_cost"`
-	GoodsTotal   int    `json:"goods_total" db:"goods_total"`
-	CustomFee    int    `json:"custom_fee" db:"custom_fee"`
+	OrderUID     string  `json:"-" db:"order_uid"`
+	Transaction  string  `json:"transaction" fake:"{uuid}"`
+	RequestID    string  `json:"request_id" fake:"{uuid}"`
+	Currency     string  `json:"currency" fake:"{CurrencyShort}"`
+	Provider     string  `json:"provider" fake:"{company}"`
+	Amount       float64 `json:"amount" fake:"{price:1,10000}"`
+	PaymentDt    int     `json:"payment_dt" fake:"{number:100,1000}"`
+	Bank         string  `json:"bank" fake:"{bankname}"`
+	DeliveryCost float64 `json:"delivery_cost" fake:"{price:1,10000}"`
+	GoodsTotal   float64 `json:"goods_total" fake:"{price:1,10000}"`
+	CustomFee    float64 `json:"custom_fee" fake:"{price:1,10000}"`
 }
 
 type Item struct {
-	ID          int    `json:"-" db:"id"`
-	OrderUID    string `json:"-" db:"order_uid"`
-	ChrtID      int64  `json:"chrt_id" db:"chrt_id"`
-	TrackNumber string `json:"track_number" db:"track_number"`
-	Price       int    `json:"price" db:"price"`
-	Rid         string `json:"rid" db:"rid"`
-	Name        string `json:"name" db:"name"`
-	Sale        int    `json:"sale" db:"sale"`
-	Size        string `json:"size" db:"size"`
-	TotalPrice  int    `json:"total_price" db:"total_price"`
-	NmID        int64  `json:"nm_id" db:"nm_id"`
-	Brand       string `json:"brand" db:"brand"`
-	Status      int    `json:"status" db:"status"`
+	ID          int    `json:"-"`
+	OrderUID    string `json:"-"`
+	ChrtID      int64  `json:"chrt_id"fake:"{number:1,10000}"`
+	TrackNumber string `json:"track_number" `
+	Price       int    `json:"price" fake:"{number:1000,10000}"`
+	Rid         string `json:"rid" fake:"{uuid}"`
+	Name        string `json:"name" fake:"{productname}"`
+	Sale        int    `json:"sale" fake:"{number:0,100}"`
+	Size        string `json:"size" fake:"{number:0,100}"`
+	TotalPrice  int    `json:"total_price" fake:"{number:1,10000} `
+	NmID        int64  `json:"nm_id" fake:"{number:10000,99999}"`
+	Brand       string `json:"brand" fake:"{company}"`
+	Status      int    `json:"status" fake:"{number:200,202}"`
 }

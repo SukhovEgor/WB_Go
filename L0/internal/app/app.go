@@ -1,27 +1,57 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"	
-	"encoding/json"
+	"math/rand"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
+	cache "test-task/internal/cache"
+	"test-task/internal/kafka"
+	models "test-task/internal/models"
 	"test-task/internal/storage"
 
+	"github.com/IBM/sarama"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/gorilla/mux"
 )
 
 type App struct {
 	repository storage.Repository
+	cache      cache.Cache
+	Producer   sarama.SyncProducer
+	Consumer   sarama.Consumer
 }
 
 func NewApp(connStr string) (*App, error) {
 	app := &App{}
+
 	err := app.repository.InitRepository(connStr)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v", err)
 		return nil, err
 	}
+
+	brokers := []string{"localhost:9092"}
+
+	producer, err := kafka.ConnectProducer(brokers)
+	if err != nil {
+		log.Printf("Unable to init Kafka producer: %v", err)
+		return nil, err
+	}
+	app.Producer = producer
+
+	consumer, err := kafka.ConnectConsumer(brokers)
+	if err != nil {
+		log.Printf("Unable to init Kafka consumer: %v", err)
+		return nil, err
+	}
+	app.Consumer = consumer
+
 	return app, nil
 }
 
@@ -29,10 +59,12 @@ func (a *App) HomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Welcome to the home page!")
 }
 
-func  (a *App)  GetOrderById(w http.ResponseWriter, r *http.Request) {
+func (a *App) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	order_uid := mux.Vars(r)["order_uid"]
+	log.Printf("Searching : %v", order_uid)
 
 	order, exist, err := a.repository.FindOrderById(order_uid)
+
 	if !exist {
 		fmt.Fprintf(w, "Order %v does not exist\n", order_uid)
 		return
@@ -40,6 +72,9 @@ func  (a *App)  GetOrderById(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Finding order by id is failed: %v", err)
 		return
 	}
+
+	kafka.DoRequest(a.Producer, a.Consumer, order_uid, "get_order_by_id", "get_order_by_id_response")
+
 	json_data, err := json.MarshalIndent(order, "", "\t")
 	if err != nil {
 		log.Printf("Failed to create json: %v", err)
@@ -47,91 +82,105 @@ func  (a *App)  GetOrderById(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", json_data)
 }
 
-func (a *App) CreateOrders(w http.ResponseWriter, r *http.Request) {
-	
+func (a *App) HandleCreateOrders(data string) (interface{}, error) {
+		orderCount, err := strconv.Atoi(data)
+	   	if err != nil {
+	   		log.Printf("Parse error: %v", err)
+	   		return nil, err
+	   	}
+
+	   	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	   	ordersAdded := 0
+
+	   	for i := 0; i < orderCount; i++ {
+	   		order, err := createRandomOrder(rng)
+	   		if err != nil {
+	   			return nil, err
+	   		}
+
+	   		if err := a.repository.InsertToDB(&order); err != nil {
+	   			log.Printf("DB inserting error: %v", err)
+	   			return nil, err
+	   		}
+	   		ordersAdded++
+	   	}
+
+	   	return fmt.Sprintf("Amount of created orders is: %d", ordersAdded), nil
 }
 
-/* func (a *App) Insert(w http.ResponseWriter, r *http.Request) {
-	log.Println("Insert")
-	order := models.Order{
-		OrderUID:          "test_order2",
-		TrackNumber:       "test_trackNum",
-		Entry:             "test_entry",
-		Locale:            "ru",
-		InternalSignature: "test_sign",
-		CustomerID:        "test_customer",
-		DeliveryService:   "test_deliverySer",
-		Shardkey:          "test_SK",
-		SmID:              1,
-		DateCreated:       time.Now(),
-		OofShard:          "1",
-		Delivery: models.Delivery{
-			OrderUID: "test_order2",
-			Name:     "test_name",
-			Phone:    "123456",
-			Zip:      "test_zip",
-			City:     "test_city",
-			Address:  "test_address",
-			Region:   "test_region",
-			Email:    "test_email",
-		},
-		Payment: models.Payment{
-			OrderUID:     "test_order2",
-			Transaction:  "test_tx",
-			RequestID:    "test_req",
-			Currency:     "RUB",
-			Provider:     "test_prov",
-			Amount:       100,
-			PaymentDt:    time.Now().Unix(),
-			Bank:         "test_bank",
-			DeliveryCost: 200,
-			GoodsTotal:   300,
-			CustomFee:    10,
-		},
-		Items: []models.Item{
-			{
-				ID:          1,
-				OrderUID:    "test_order2",
-				ChrtID:      11111,
-				TrackNumber: "test_trackNum",
-				Price:       100,
-				Rid:         "test_Rid",
-				Name:        "test_Name",
-				Sale:        10,
-				Size:        "test_size",
-				TotalPrice:  1000,
-				NmID:        1111111,
-				Brand:       "test_Brand",
-				Status:      0,
-			},
-		},
-	}
-
-	a.repository.InsertToDB(&order)
-} */
-
-/* func (a *App) Select(w http.ResponseWriter, r *http.Request) {
-	// Query all authors
-	rows, err := a.conn.Query(context.Background(), "SELECT * FROM orders")
+func (a *App) HandleGetOrderByID(uid string) (interface{}, error) {
+	uid = strings.Trim(uid, `"`)
+	log.Printf("HandleSearching : %v", uid)
+	order, exist, err := a.repository.FindOrderById(uid)
 	if err != nil {
-		log.Fatalf("Error querying orders: %v", err)
+		log.Printf("DB fetch error: %v", err)
+		return nil, err
 	}
-	defer rows.Close()
+	if !exist {
+		return nil, fmt.Errorf("Order %s is not found", uid)
+	}
+	return order, nil
+}
 
-	var orders []models.Order
-	for rows.Next() {
-		var order models.Order
-		if err := rows.Scan(order.OrderUID, order.TrackNumber, order.Entry,
-			order.Locale, order.InternalSignature, order.CustomerID,
-			order.DeliveryService, order.Shardkey, order.SmID,
-			order.DateCreated, order.OofShard); err != nil {
-			log.Fatalf("Error scanning row: %v", err)
-		}
-		orders = append(orders, order)
+func (a *App) CreateOrders(w http.ResponseWriter, r *http.Request) {
+	orderCount := 2
+	msg := kafka.DoRequest(a.Producer, a.Consumer, orderCount,
+		"post_order", "post_order_response")
+
+	response := map[string]interface{}{
+		"message": msg,
 	}
-	log.Println("Orders:", orders)
-} */
+
+	if !strings.Contains(msg, "Amount of created orders is: ") {
+		response["error"] = true
+	} else {
+		response["error"] = false
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error while creating response: %v", err)
+	}
+	fmt.Fprintf(w, "Created  %v orders", orderCount)
+}
+
+func createRandomOrder(rng *rand.Rand) (models.Order, error) {
+	var order models.Order
+	var delivery models.Delivery
+	var payment models.Payment
+
+	if err := gofakeit.Struct(&order); err != nil {
+		return order, err
+	}
+	if err := gofakeit.Struct(&delivery); err != nil {
+		return order, err
+	}
+	if err := gofakeit.Struct(&payment); err != nil {
+		return order, err
+	}
+
+	itemCount := rng.Intn(10) + 1
+	items := make([]models.Item, 0, itemCount)
+	for i := 0; i < itemCount; i++ {
+		var item models.Item
+		if err := gofakeit.Struct(&item); err != nil {
+			return order, err
+		}
+		items = append(items, item)
+	}
+
+	order.Delivery = delivery
+	order.Payment = payment
+	order.Items = items
+	return order, nil
+}
 
 func (a *App) Close() {
 	a.repository.Close()
+	if a.Producer != nil {
+		a.Producer.Close()
+	}
+	if a.Consumer != nil {
+		a.Consumer.Close()
+	}
 }

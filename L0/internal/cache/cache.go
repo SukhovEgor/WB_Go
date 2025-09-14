@@ -34,17 +34,28 @@ func (cache *Cache) Add(order *models.Order) {
 	log.Printf("Add order into cache: %v", order.OrderUID)
 
 	if len(cache.cacheMap) > cache.capacity {
+		log.Printf("Remove oldest orders")
 		cache.removeOldest()
 	}
 }
 
-func (cache *Cache) Get(order_uid string) (order *models.Order, exist bool) {
+func (cache *Cache) Get(order_uid string) (order *models.Order, exist bool, err error) {
 
-	if element, exist := cache.cacheMap[order_uid]; exist {
-		cache.cacheList.MoveToFront(element)
-		return element.Value.(*models.Order), true
+	/* 	if element, exist := cache.cacheMap[order_uid]; exist {
+	   		cache.cacheList.MoveToFront(element)
+	   		return element.Value.(*models.Order), true, nil
+	   	}
+	   	return nil, false, err
+	*/
+	element, exist := cache.cacheMap[order_uid]
+	log.Printf("exist : %v", exist)
+	log.Printf("element : %v", element)
+	if !exist {
+		return nil, false, err
 	}
-	return nil, false
+
+	cache.cacheList.MoveToFront(element)
+	return element.Value.(*models.Order), true, nil
 }
 
 func (cache *Cache) removeOldest() {
@@ -55,4 +66,3 @@ func (cache *Cache) removeOldest() {
 		cache.cacheList.Remove(oldestElement)
 	}
 }
-
