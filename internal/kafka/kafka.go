@@ -65,7 +65,7 @@ func DoRequest[T any](
 			response = "Error while receiving message: " + errMsg.Err.Error()
 		}
 	case msg := <-partitionConsumer.Messages():
-		log.Printf("[Kafka][Response] Topic=%s | Message=%s\n", msg.Topic, string(msg.Value))
+		log.Printf("Topic=%s | Message=%s\n", msg.Topic, string(msg.Value))
 		response = string(msg.Value)
 	case <-ctx.Done():
 		response = "Response timeout expired"
@@ -86,30 +86,27 @@ func DoServiceRequest(
 ) {
 	consumer, err := c.ConsumePartition(topicReq, 0, sarama.OffsetNewest)
 	if err != nil {
-		log.Printf("[Kafka][Service] Failed to subscribe to topic %s: %v", topicReq, err)
+		log.Printf("Failed to subscribe to topic %s: %v", topicReq, err)
 		return
 	}
 
 	go func() {
-		defer log.Printf("[Kafka][Service] Stopped listening on topic %s", topicReq)
+		defer log.Printf("Stopped listening on topic %s", topicReq)
 
 		for {
 			select {
 			case errMsg, ok := <-consumer.Errors():
 				if !ok {
-					log.Printf("[Kafka][Service] Error channel closed for topic %s", topicReq)
+					log.Printf("Error channel closed for topic %s", topicReq)
 					return
 				}
 				if errMsg != nil {
-					log.Printf("[Kafka][Service] Consumer error: %v", errMsg.Err)
-					if sendErr := SendMessage(producer, errMsg.Err.Error(), topicResp); sendErr != nil {
-						log.Printf("[Kafka][Service] Failed to send error response: %v", sendErr)
-					}
+					log.Printf("Consumer error: %v", errMsg.Err)
 				}
 
 			case msg, ok := <-consumer.Messages():
 				if !ok {
-					log.Printf("[Kafka][Service] Message channel closed for topic %s", topicReq)
+					log.Printf("Message channel closed for topic %s", topicReq)
 					return
 				}
 				if msg == nil {
@@ -117,16 +114,16 @@ func DoServiceRequest(
 				}
 
 				payload := string(msg.Value)
-				log.Printf("[Kafka][Service] Incoming message: Topic=%s | Value=%s", msg.Topic, payload)
+				log.Printf("Incoming message: Topic=%s | Value=%s", msg.Topic, payload)
 
-				result, opErr := operation(payload)
-				if opErr != nil {
-					log.Printf("[Kafka][Service] Operation failed: %v", opErr)
-					result = opErr.Error()
+				result, err := operation(payload)
+				if err != nil {
+					log.Printf("Operation failed: %v", err)
+					result = err.Error()
 				}
 
 				if sendErr := SendMessage(producer, result, topicResp); sendErr != nil {
-					log.Printf("[Kafka][Service] Failed to send response: %v", sendErr)
+					log.Printf(" Failed to send response: %v", sendErr)
 				}
 			}
 		}
@@ -150,6 +147,6 @@ func SendMessage[T any](producer sarama.SyncProducer, payload T, topic string) e
 		return err
 	}
 
-	log.Printf("[Kafka][Producer] Message sent: Topic=%s | Partition=%d | Offset=%d", topic, partition, offset)
+	log.Printf("Message sent: Topic=%s | Partition=%d | Offset=%d", topic, partition, offset)
 	return nil
 }

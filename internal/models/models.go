@@ -36,7 +36,7 @@ type Payment struct {
 	OrderUID     string  `json:"-" db:"order_uid"`
 	Transaction  string  `json:"transaction" fake:"{uuid}"`
 	RequestID    string  `json:"request_id" fake:"{uuid}"`
-	Currency     string  `json:"currency" fake:"{CurrencyShort}"`
+	Currency     string  `json:"currency" fake:"{currencyshort}"`
 	Provider     string  `json:"provider" fake:"{company}"`
 	Amount       float64 `json:"amount" fake:"{price:1,10000}"`
 	PaymentDt    int     `json:"payment_dt" fake:"{number:100,1000}"`

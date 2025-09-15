@@ -40,13 +40,6 @@ func (cache *Cache) Add(order *models.Order) {
 }
 
 func (cache *Cache) Get(order_uid string) (order *models.Order, exist bool, err error) {
-
-	/* 	if element, exist := cache.cacheMap[order_uid]; exist {
-	   		cache.cacheList.MoveToFront(element)
-	   		return element.Value.(*models.Order), true, nil
-	   	}
-	   	return nil, false, err
-	*/
 	element, exist := cache.cacheMap[order_uid]
 	log.Printf("exist : %v", exist)
 	log.Printf("element : %v", element)

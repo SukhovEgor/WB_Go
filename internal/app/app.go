@@ -82,32 +82,6 @@ func (a *App) GetOrderById(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s\n", json_data)
 }
 
-func (a *App) HandleCreateOrders(data string) (interface{}, error) {
-		orderCount, err := strconv.Atoi(data)
-	   	if err != nil {
-	   		log.Printf("Parse error: %v", err)
-	   		return nil, err
-	   	}
-
-	   	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	   	ordersAdded := 0
-
-	   	for i := 0; i < orderCount; i++ {
-	   		order, err := createRandomOrder(rng)
-	   		if err != nil {
-	   			return nil, err
-	   		}
-
-	   		if err := a.repository.InsertToDB(&order); err != nil {
-	   			log.Printf("DB inserting error: %v", err)
-	   			return nil, err
-	   		}
-	   		ordersAdded++
-	   	}
-
-	   	return fmt.Sprintf("Amount of created orders is: %d", ordersAdded), nil
-}
-
 func (a *App) HandleGetOrderByID(uid string) (interface{}, error) {
 	uid = strings.Trim(uid, `"`)
 	log.Printf("HandleSearching : %v", uid)
@@ -122,26 +96,55 @@ func (a *App) HandleGetOrderByID(uid string) (interface{}, error) {
 	return order, nil
 }
 
+func (a *App) HandleCreateOrders(data string) (interface{}, error) {
+	orderCount, err := strconv.Atoi(data)
+	if err != nil {
+		log.Printf("Parse error: %v", err)
+		return nil, err
+	}
+
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	ordersAdded := 0
+
+	var orders []models.Order
+	for i := 0; i < orderCount; i++ {
+		order, err := createRandomOrder(rng)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if err := a.repository.InsertToDB(&order); err != nil {
+			log.Printf("DB inserting error: %v", err)
+			return nil, err
+		}
+		ordersAdded++
+		orders = append(orders, order)
+	}
+
+	return orders, nil
+}
+
 func (a *App) CreateOrders(w http.ResponseWriter, r *http.Request) {
 	orderCount := 2
 	msg := kafka.DoRequest(a.Producer, a.Consumer, orderCount,
 		"post_order", "post_order_response")
 
-	response := map[string]interface{}{
-		"message": msg,
+	var orders []models.Order
+	if err := json.Unmarshal([]byte(msg), &orders); err != nil {
+		response := map[string]interface{}{
+			"error":   true,
+			"message": msg,
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(response)
+		return
 	}
-
-	if !strings.Contains(msg, "Amount of created orders is: ") {
-		response["error"] = true
-	} else {
-		response["error"] = false
-	}
-
+	
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(response); err != nil {
+	if err := json.NewEncoder(w).Encode(orders); err != nil {
 		log.Printf("Error while creating response: %v", err)
 	}
-	fmt.Fprintf(w, "Created  %v orders", orderCount)
 }
 
 func createRandomOrder(rng *rand.Rand) (models.Order, error) {
