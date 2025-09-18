@@ -17,7 +17,7 @@ type Repository struct {
 	cache cache.Cache
 }
 
-const cacheCapacity = 100
+const cacheCapacity = 10
 
 func (repository *Repository) InitRepository(connStr string) error {
 

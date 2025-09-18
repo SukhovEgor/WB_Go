@@ -27,7 +27,7 @@ type Delivery struct {
 	Phone    string `json:"phone" fake:"{phone}"`
 	Zip      string `json:"zip"`
 	City     string `json:"city" fake:"{city}"`
-	Address  string `json:"address" fake:"{address}"`
+	Address  string `json:"address" fake:"{street}"`
 	Region   string `json:"region" fake:"{state}"`
 	Email    string `json:"email" fake:"{email}"`
 }
@@ -38,26 +38,26 @@ type Payment struct {
 	RequestID    string  `json:"request_id" fake:"{uuid}"`
 	Currency     string  `json:"currency" fake:"{currencyshort}"`
 	Provider     string  `json:"provider" fake:"{company}"`
-	Amount       float64 `json:"amount" fake:"{price:1,10000}"`
+	Amount       float64 `json:"amount"`
 	PaymentDt    int     `json:"payment_dt" fake:"{number:100,1000}"`
 	Bank         string  `json:"bank" fake:"{bankname}"`
-	DeliveryCost float64 `json:"delivery_cost" fake:"{price:1,10000}"`
-	GoodsTotal   float64 `json:"goods_total" fake:"{price:1,10000}"`
-	CustomFee    float64 `json:"custom_fee" fake:"{price:1,10000}"`
+	DeliveryCost float64 `json:"delivery_cost" fake:"{price:1,1000}"`
+	GoodsTotal   float64 `json:"goods_total"`
+	CustomFee    float64 `json:"custom_fee" fake:"{price:1,1000}"`
 }
 
 type Item struct {
-	ID          int    `json:"-"`
-	OrderUID    string `json:"-"`
-	ChrtID      int64  `json:"chrt_id"fake:"{number:1,10000}"`
-	TrackNumber string `json:"track_number" `
-	Price       int    `json:"price" fake:"{number:1000,10000}"`
-	Rid         string `json:"rid" fake:"{uuid}"`
-	Name        string `json:"name" fake:"{productname}"`
-	Sale        int    `json:"sale" fake:"{number:0,100}"`
-	Size        string `json:"size" fake:"{number:0,100}"`
-	TotalPrice  int    `json:"total_price" fake:"{number:1,10000} `
-	NmID        int64  `json:"nm_id" fake:"{number:10000,99999}"`
-	Brand       string `json:"brand" fake:"{company}"`
-	Status      int    `json:"status" fake:"{number:200,202}"`
+	ID          int     `json:"-"`
+	OrderUID    string  `json:"-"`
+	ChrtID      int64   `json:"chrt_id"fake:"{number:1,10000}"`
+	TrackNumber string  `json:"track_number" `
+	Price       int     `json:"price" fake:"{number:1000,10000}"`
+	Rid         string  `json:"rid" fake:"{uuid}"`
+	Name        string  `json:"name" fake:"{productname}"`
+	Sale        int     `json:"sale" fake:"{number:0,100}"`
+	Size        string  `json:"size" fake:"{number:0,100}"`
+	TotalPrice  float64 `json:"total_price"`
+	NmID        int64   `json:"nm_id" fake:"{number:10000,99999}"`
+	Brand       string  `json:"brand" fake:"{company}"`
+	Status      int     `json:"status" fake:"{number:200,202}"`
 }

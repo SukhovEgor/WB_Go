@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -56,7 +57,16 @@ func NewApp(connStr string) (*App, error) {
 }
 
 func (a *App) HomeHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the home page!")
+	html, err := os.ReadFile("../web/index.html")
+	if err != nil {
+		log.Printf("Error reading index.html: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "internal error")
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(html)
 }
 
 func (a *App) GetOrderById(w http.ResponseWriter, r *http.Request) {
@@ -140,7 +150,7 @@ func (a *App) CreateOrders(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(orders); err != nil {
 		log.Printf("Error while creating response: %v", err)
@@ -164,17 +174,31 @@ func createRandomOrder(rng *rand.Rand) (models.Order, error) {
 
 	itemCount := rng.Intn(10) + 1
 	items := make([]models.Item, 0, itemCount)
+	var goodsTotal float64
+
 	for i := 0; i < itemCount; i++ {
 		var item models.Item
 		if err := gofakeit.Struct(&item); err != nil {
 			return order, err
 		}
+
+		quantity := rng.Intn(5) + 1
+
+		item.Sale = rng.Intn(51)
+
+		item.TotalPrice = float64(item.Price*quantity) * (1 - float64(item.Sale)/100.0)
+
+		goodsTotal += item.TotalPrice
 		items = append(items, item)
 	}
+
+	payment.GoodsTotal = goodsTotal
+	payment.Amount = payment.DeliveryCost + goodsTotal + payment.CustomFee
 
 	order.Delivery = delivery
 	order.Payment = payment
 	order.Items = items
+
 	return order, nil
 }
 

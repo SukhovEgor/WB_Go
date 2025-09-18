@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Информация о заказе</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 20px;
+        }
+
+        button,
+        input {
+            display: block;
+            margin: 20px auto;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        #orderList li {
+            padding: 6px;
+            border-bottom: 1px solid #ccc;
+            word-break: break-word;
+        }
+    </style>
+
+</head>
+
+<body>
+    <h1>Создать случайные заказы</h1>
+    <button onclick="createOrders()">Создать заказы</button>
+    <ul id="orderList"></ul>
+
+    <h1>Поиск заказа</h1>
+    <input type="text" size="10" oninput="this.size=Math.max(this.value.length, 10)" id="orderUid">
+    <button onclick="getOrder()">Найти</button>
+
+    <div id="orderContainer"></div>
+
+    <script>
+        function createOrders() {
+            fetch("./add")
+                .then(response => response.json())
+                .then(orders => {
+                    const list = document.getElementById("orderList");
+                    list.innerHTML = "";
+                    orders.forEach(order => {
+                        const li = document.createElement("li");
+                        li.textContent = order.order_uid;
+                        list.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('error').textContent = 'Ошибка: ' + err.message;
+                });
+        }
+
+        function getOrder() {
+            const id = document.getElementById("orderUid").value.trim();
+            if (!id) { alert("Введите ID заказа"); return; }
+
+            fetch("./order/" + encodeURIComponent(id))
+                .then(response => response.text())
+                .then(data => {
+                    if (data.startsWith("{")) {
+                        const order = JSON.parse(data);
+                        renderOrder(order);
+                        document.getElementById("error").textContent = "";
+                    } else {
+                        alert(data);
+                        document.getElementById("error").textContent = "Ошибка: " + data;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('error').textContent = 'Ошибка: ' + err.message;
+                });
+        }
+
+        function renderOrder(order) {
+            const container = document.getElementById("orderContainer");
+            let html = `
+                    <h2>Заказ ${order.order_uid}</h2>
+                    <p><b>Трек-номер:</b> ${order.track_number}</p>
+                    <p><b>Дата создания:</b> ${order.date_created}</p>
+                    
+                    <h3>Оплата</h3>
+                    <table>
+                        <tr><th>Сумма</th>
+                            <td>${order.payment.amount}</td>
+                        </tr>
+                        <tr><th>Доставка</th>
+                            <td>${order.payment.delivery_cost}</td>
+                        </tr>
+                        <tr><th>Товары</th>
+                            <td>${order.payment.goods_total}</td>
+                        </tr>
+                        <tr><th>Комиссия</th>
+                            <td>${order.payment.custom_fee}</td>
+                        </tr>
+                        <tr><th>Банк</th>
+                            <td>${order.payment.bank}</td>
+                        </tr>
+                        <tr><th>Провайдер</th>
+                            <td>${order.payment.provider}</td>
+                        </tr>
+                    </table>
+
+                    <h3>Доставка</h3>
+                    <table>
+                        <tr><th>Получатель</th>
+                            <td>${order.delivery.name}</td>
+                        </tr>
+                        <tr><th>Телефон</th>
+                            <td>${order.delivery.phone}</td>
+                        </tr>
+                        <tr><th>Адрес</th>
+                            <td>${order.delivery.zip}, ${order.delivery.city}, ${order.delivery.address}</td>
+                        </tr>
+                        <tr><th>Email</th>
+                            <td>${order.delivery.email}</td>
+                        </tr>
+                    </table>
+                `;
+
+            if (order.items && order.items.length > 0) {
+                html += `
+                        <h3>Товары (${order.items.length})</h3>
+                        <table>
+                            <thead>
+                                <tr><th>Название</th><th>Бренд</th><th>Цена</th><th>Статус</th></tr>
+                            </thead>
+                            <tbody>
+                                ${order.items.map(it => `
+                                    <tr>
+                                        <td>${it.name}</td>
+                                        <td>${it.brand}</td>
+                                        <td>${it.price}</td>
+                                        <td>${it.status}</td>
+                                    </tr>
+                                `).join("")}
+                            </tbody>
+                        </table>`;
+            }
+
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>

@@ -41,8 +41,6 @@ func (cache *Cache) Add(order *models.Order) {
 
 func (cache *Cache) Get(order_uid string) (order *models.Order, exist bool, err error) {
 	element, exist := cache.cacheMap[order_uid]
-	log.Printf("exist : %v", exist)
-	log.Printf("element : %v", element)
 	if !exist {
 		return nil, false, err
 	}
